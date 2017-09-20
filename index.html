@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Brick Break</title>
+        <h1 align="center">CISC474 Brick Break</h1>
+        <style>* { padding: 0; margin: 0; }</style>
+        <script src="/Users/vqn/Documents/Advanced Web Tech/Project1/phaser.min.js"></script>        
+    </head>
+
+<body>
+    <script>
+        var game = new Phaser.Game(480, 440, Phaser.AUTO, null, { // Canvas
+            preload: preload, create: create, update: update
+        });
+
+        var ball;
+        var paddle;
+        var bricks;
+        var brick;
+        var brickProperties;
+        var score;
+        var scoreCount = 0;
+
+        function preload() {
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.scale.pageAlignHorizontally = true;
+            game.scale.pageAlignVertically = true;
+            game.stage.backgroundColor = '#eee';
+            game.load.image('ball', '/Users/vqn/Documents/Advanced Web Tech/Project1/ball.png');
+            game.load.image('paddle', '/Users/vqn/Documents/Advanced Web Tech/Project1/paddle.png');
+            game.load.image('brick', '/Users/vqn/Documents/Advanced Web Tech/Project1/brick.png');
+        }
+        function create() {
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            
+            ball = game.add.sprite(game.world.width*.5, game.world.height-25, 'ball');
+            ball.anchor.set(.5);
+
+            paddle = game.add.sprite(game.world.width*.5, game.world.height-5, 'paddle');
+            paddle.anchor.set(.5, 1);
+
+
+            game.physics.enable(ball, Phaser.Physics.ARCADE);
+            ball.body.velocity.set(200, -200);
+            ball.body.collideWorldBounds = true;
+            ball.body.bounce.set(1);
+            game.physics.arcade.checkCollision.down = false;
+            ball.checkWorldBounds = true;
+            ball.events.onOutOfBounds.add(function(){
+                alert('Game Over');
+                location.reload();
+            });
+
+            game.physics.enable(paddle, Phaser.Physics.ARCADE);
+            paddle.body.immovable = true;
+
+            drawBricks();
+            
+            score = game.add.text(5, 5, 'Points: 0', { font: '18px Arial Black', fill: 'black' });
+        }
+        function update() {
+            game.physics.arcade.collide(ball, paddle);
+            game.physics.arcade.collide(ball, bricks, hitBrick);
+            paddle.x = game.input.x || game.world.width*.5;
+            
+        }
+
+        function drawBricks() {
+            brickProperties = {
+                width: 40,
+                height: 18,
+                count: {
+                    row: 7,
+                    col: 3,
+                },
+                offset: {
+                    top: 50,
+                    left: game.world.width*.23
+                },
+                padding: 5
+            };
+
+            bricks = game.add.group();
+            for (i = 0; i < brickProperties.count.col; i++) {
+                for (j = 0; j < brickProperties.count.row; j++) {
+                    var posX = (j*(brickProperties.width+brickProperties.padding))+brickProperties.offset.left;
+                    var posY = (i*(brickProperties.height+brickProperties.padding))+brickProperties.offset.top;
+                    brick = game.add.sprite(posX, posY, 'brick');
+                    game.physics.enable(brick, Phaser.Physics.ARCADE);
+                    brick.body.immovable = true;
+                    brick.anchor.set(.5);
+                    bricks.add(brick);
+                }
+            }
+        }
+
+        function hitBrick(ball, brick) {
+            brick.kill();
+            scoreCount += 10;
+            score.setText('Points: ' + scoreCount);
+        }
+    </script>
+</body>
+</html>
