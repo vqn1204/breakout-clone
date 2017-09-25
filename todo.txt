@@ -5,3 +5,5 @@ Fix last brick not disappearing before winning
 Add angles to hitting paddle
 
 Allow user to hold onto the ball and shoot it at the beginning
+
+Add more jQurey stuffs
