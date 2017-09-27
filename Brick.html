@@ -4,7 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <title> Brick Break CISC474</title>
-    <<h1 align="center">Brick Break CISC474</h1>
+    <h1 align="center">Brick Break CISC474</h1>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
         <style>
             * {
                 padding: 0;
@@ -12,7 +13,6 @@
             }
 
             canvas {
-                background: #222222;
                 display: block;
                 margin: 0 auto;
             }
@@ -20,18 +20,21 @@
 </head>
 
 <body>
-    <canvas id="myCanvas" width="520" height="400"></canvas>
+    <canvas id="myCanvas" width="520" height="400" style="background: url('background.jpg')"></canvas>
+    <img id="ball" src="ball.png">
+    <img id="paddle" src="paddle.png">
 
     <script>
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
+        
+        var canvas = $('#myCanvas')[0];
+        var ctx = $('#myCanvas')[0].getContext("2d");
 
-        // Ball movement variables
+        // Ball init position
         var xBall = canvas.width / 2;
         var yBall = canvas.height - 30;
-        var xMove = 5;
-        var yMove = -5;
-
+        // Ball movement variables
+        var xMove = 2;
+        var yMove = -2;
         var ballRadius = 10;
 
         // Paddle
@@ -59,6 +62,9 @@
         // User input initialization
         var leftPressed = false;
         var rightPressed = false;
+        // Left and right arrows to control paddle
+        $(document).ready().keyup(keyUpHandler);
+        $(document).ready().keydown(keyDownHandler);
 
         function drawBall() {
             ctx.beginPath();
@@ -66,7 +72,13 @@
             ctx.fillStyle = "#FF0000";
             ctx.fill();
             ctx.closePath();
-        }
+                // window.onload = function() {
+                //     var img = document.getElementById("ball");
+                //     ctx.drawImage(img, xBall, yBall);
+                //     console.log(xBall, yBall);
+                // }
+            }
+        
 
         function drawPaddle() {
             ctx.beginPath();
@@ -134,11 +146,9 @@
             if (leftPressed && paddleX > 0) {
                 paddleX -= 7;
             }
+            requestAnimationFrame(draw);
 
         }
-
-        document.addEventListener("keydown", keyDownHandler, false);
-        document.addEventListener("keyup", keyUpHandler, false);
 
         // Handling user input
         function keyDownHandler(e) {
@@ -172,7 +182,7 @@
                 }
             }
         }
-        setInterval(draw, 10);
+        draw();
     </script>
 
 </body>

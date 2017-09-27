@@ -1,7 +1,12 @@
-Change paddle movement to arrow keys instead of mouse
-
-Fix last brick not disappearing before winning
 
 Add angles to hitting paddle
 
 Allow user to hold onto the ball and shoot it at the beginning
+
+Add images in place of rectangle/circle for ball, paddle, and bricks
+
+Add powerups
+
+Add start menu/press space to start
+
+
