@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title> Brick Break CISC474</title>
+    <link rel="stylesheet" href="fonts.css" type="text/css">
+    <h1 align="center">Brick Break CISC474</h1>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 200;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myCanvas" width="600" height="600" style="background: url('background.jpg')"></canvas>
+
+    <script>
+        var canvas = $('#myCanvas')[0];
+        var ctx = $('#myCanvas')[0].getContext("2d");
+
+        // Ball movement variables
+        var xMove = -4;
+        var yMove = -4;
+
+        // Ball load and set properties
+        ball = new Image();
+        var ballRadius;
+        var yBall, xBall;
+
+        function loadBall() {
+            ball.onload = function () {
+                ballRadius = this.height / 2;
+                yBall = paddleY - (ballRadius * 2) + 5;
+                xBall = (canvas.width / 2) - ballRadius;
+            };
+            ball.src = 'ball.png';
+        }
+
+        // Paddle load image and set properties
+        paddle = new Image();
+        var paddleHeight, paddleWidth;
+        var paddleX, paddleY;
+        function loadPaddle() {
+            paddle.onload = function () {
+                paddleHeight = this.height;
+                paddleWidth = this.width;
+                paddleX = (canvas.width) / 2 - (paddleWidth / 2); // init position
+                paddleY = (canvas.height - paddleHeight);
+            };
+            paddle.src = 'paddle.png';
+        }
+
+        // Laser load image and set properties
+        leftLaser = new Image();
+        rightLaser = new Image();
+        var laserHeight, laserWidth;
+        var laserLeft, laserRight;
+        var laserSpeed = 8;
+        var laserCount = 0;
+        var hasLaser = false;
+        var leftShot, rightShot = false;
+        var leftLaserY, rightLaserY;
+        function loadLeftLaser() {
+            leftLaser.onload = function () {
+                laserHeight = this.height;
+                laserWidth = this.width;
+                leftLaserY = paddleY - laserHeight;
+            };
+            leftLaser.src = 'laser.png';
+        }
+        function loadRightLaser() {
+            rightLaser.onload = function () {
+                laserHeight = this.height;
+                laserWidth = this.width;
+                rightLaserY = paddleY - laserHeight;
+            };
+            rightLaser.src = 'laser.png';
+        }
+
+        var explosion = new Image();
+        var explosionWidth;
+        function loadExplosion() {
+            explosion.onload = function () {
+                explosionWidth = this.width;
+            };
+            explosion.src = 'explosion.png';
+        }
+
+        var powerup = new Image();
+        var powerupWidth;
+        function loadPowerUp() {
+            powerup.onload = function () {
+                powerupWidth = this.width;
+            };
+            powerup.src = 'powerup.png';
+        }
+
+        var powerup2 = new Image();
+        var powerup2Width;
+        function loadPowerUp2() {
+            powerup2.onload = function () {
+                powerup2Width = this.width;
+            };
+            powerup2.src = 'powerup2.png';
+        }
+
+        var metal = new Image();
+        function loadMetal() {
+
+        };
+        metal.src = 'metal.png';
+
+        var fire = new Image();
+        function loadFire() {
+
+        };
+        fire.src = 'fire.png';
+
+        var spark = new Image();
+        function loadSpark() {
+
+        };
+        spark.src = 'spark.png';
+
+        // Bricks
+        var brickRows = 5;
+        var brickCols = 12;
+        var brickWidth, brickHeight;
+        var brickOffset = 38;
+
+
+        //Power and metal brick vars
+        var colNums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            colRanNums = [],
+            i = colNums.length,
+            j = 0;
+
+        while (i--) {
+            j = Math.floor(Math.random() * (i + 1));
+            colRanNums.push(colNums[j]);
+            colNums.splice(j, 1);
+        }
+
+        var rowNums = [0, 1, 2, 3, 4],
+            rowRanNums = [],
+            i = rowNums.length,
+            j = 0;
+
+        while (i--) {
+            j = Math.floor(Math.random() * (i + 1));
+            rowRanNums.push(rowNums[j]);
+            rowNums.splice(j, 1);
+        }
+
+        var powerBrickRow = rowRanNums[0];
+        var powerBrickCol = colRanNums[0];
+        var powerBrickRow2 = rowRanNums[2];
+        var powerBrickCol2 = colRanNums[2];
+        var metalBrickRow2 = rowRanNums[1];
+        var metalBrickCol2 = colRanNums[1];
+
+        var metalBrickRow = rowRanNums[3];
+        var metalBrickCol = colRanNums[3];
+        var powershot = false;
+        var count = 0;
+
+        // Load brick sprite
+        brick = new Image();
+        function loadBrick() {
+            brick.onload = function () {
+                brickWidth = this.width;
+                brickHeight = this.height;
+            };
+            brick.src = 'brick.png';
+        }
+
+        var bricks = [];
+        for (i = 0; i < brickCols; i++) {
+            bricks[i] = [];
+            for (j = 0; j < brickRows; j++) {
+                bricks[i][j] = { x: 0, y: 0, broken: 0, powerup: 0 }; // Broken flag if it has been broken or not
+            }
+        }
+
+        // User input initialization
+        var leftPressed = false;
+        var rightPressed = false;
+        var gameStarted = false;
+
+        // Left and right arrows to control paddle
+        $(document).ready().keyup(keyUpHandler);
+        $(document).ready().keydown(keyDownHandler);
+        $(document).ready().keydown(spaceDownHandler);
+
+
+        // Draw ball onto screen
+        function drawBall() {
+            if (powershot) {
+                ctx.drawImage(fire, xBall, yBall);
+            }
+            else {
+                ctx.drawImage(ball, xBall, yBall);
+            }
+        }
+        // Draw paddle onto screen
+        function drawPaddle() {
+            ctx.drawImage(paddle, paddleX, paddleY);
+        }
+        // Draw single brick onto screen
+        function drawBrick(x, y) {
+            ctx.drawImage(brick, x, y);
+        }
+
+        // Draw lasers on edges of paddle
+        function drawRightLaser() {
+            ctx.drawImage(rightLaser, laserRight, rightLaserY)
+        }
+        function drawLeftLaser() {
+            ctx.drawImage(leftLaser, laserLeft, leftLaserY);
+
+        }
+        function shootLeftLaser() {
+            leftLaserY -= laserSpeed;
+        }
+        function shootRightLaser() {
+            rightLaserY -= laserSpeed;
+        }
+
+        function drawExplosion(x, y) {
+            ctx.drawImage(explosion, x, y);
+        }
+        function drawPowerUp(x, y) {
+            ctx.drawImage(powerup, x, y);
+        }
+        function drawPowerUp2(x, y) {
+            ctx.drawImage(powerup2, x, y);
+        }
+        function drawMetal(x, y) {
+            ctx.drawImage(metal, x, y);
+        }
+
+        var brickPowerUps = [];
+        function randomizePowerUps(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            for (i = 0; i < brickCols; i++) {
+                brickPowerUps[i] = [];
+                for (j = 0; j < brickRows; j++) {
+                    brickPowerUps[i][j] = Math.floor(Math.random() * (max - min)) + min;
+                }
+            }
+        }
+
+        function drawBricks() {
+            for (i = 0; i < brickCols; i++) {
+                for (j = 0; j < brickRows; j++) {
+                    if (bricks[i][j].broken == 0) {
+                        var brickX = (i * (brickWidth) + brickOffset);
+                        var brickY = (j * (brickHeight) + brickOffset);
+                        bricks[i][j].x = brickX;
+                        bricks[i][j].y = brickY;
+                        drawBrick(brickX, brickY);
+                        if (j == brickPowerUps[i][j]) {
+                            bricks[i][j].powerup = 1;
+                            drawPowerUp(brickX + brickWidth / 2 - powerupWidth / 2, brickY + brickHeight / 2 - powerupWidth / 2);
+                        }
+                        if (i == powerBrickCol && j == powerBrickRow) {
+                            bricks[i][j].powerup = 0;
+                            drawPowerUp2(brickX + brickWidth / 2 - powerup2Width / 2, brickY + brickHeight / 2 - powerup2Width / 2)
+                        }
+                        else if (i == metalBrickCol && j == metalBrickRow) {
+                            bricks[i][j].powerup = 0;
+                            drawMetal(brickX, brickY);
+                        }
+                        else if (i == metalBrickCol2 && j == metalBrickRow2) {
+                            bricks[i][j].powerup = 0;
+                            drawMetal(brickX, brickY);
+                        }
+                        else if (i == powerBrickCol2 && j == powerBrickRow2) {
+                            bricks[i][j].powerup = 0;
+                            drawPowerUp2(brickX + brickWidth / 2 - powerup2Width / 2, brickY + brickHeight / 2 - powerup2Width / 2)
+                        }
+                    }
+                }
+            }
+        }
+
+        function randomizeStart() {
+            var random = Math.floor(Math.random() * 2);
+            if (random == 0) {
+                xMove = -xMove;
+            }
+        }
+        // Start movement of ball
+        function launchBall() {
+            xBall += xMove;
+            yBall += yMove;
+        }
+
+        // Place text prompting to start game
+        var xText, yText;
+        var textWidth, textHeight;
+        function placeText() {
+            ctx.fillStyle = 'white';
+            ctx.font = "25px Arcade";
+            var text = 'Press Space to Start!';
+            xText = canvas.width / 2 - textWidth / 2;
+            yText = canvas.height - 200;
+            textWidth = ctx.measureText(text).width;
+            ctx.fillText('Press Space to Start!', xText, yText);
+        }
+
+        // Makes the 'press space to start' text blink
+        var count = 0;
+        function blinkText() {
+            count++;
+            if (count % 15 > 0) {
+                placeText();
+            }
+        }
+
+        var score = 0;
+        function drawScore() {
+            ctx.font = "18px Arcade";
+            ctx.fillText('Score: ' + score, 8, 25);
+
+        }
+        function drawAmmo() {
+            ctx.font = "18px Arcade";
+            ctx.fillText('Ammo: ' + laserCount, canvas.width - 120, 25);
+        }
+
+        // Loads all sprites
+        function preload() {
+            loadPaddle();
+            loadBall();
+            loadBrick();
+            loadLeftLaser();
+            loadRightLaser();
+            loadExplosion();
+            loadPowerUp();
+            loadPowerUp2();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPaddle();
+            drawBall();
+            drawBricks();
+            brickCollision();
+            drawScore();
+            drawAmmo();
+
+            // Moves ball with paddle before it is launched
+            if (rightPressed && !gameStarted && paddleX < canvas.width - paddleWidth) {
+                xBall += 8;
+            }
+            if (leftPressed && !gameStarted && paddleX > 0) {
+                xBall -= 8;
+            }
+            if (!gameStarted) {
+                blinkText();
+            }
+            // User has pressed space to begin game
+            if (gameStarted) {
+                launchBall();
+            }
+            // If user has laser power up and the lasers have been "shot" with spacebar
+            if (hasLaser && leftShot) {
+                drawLeftLaser();
+                shootLeftLaser();
+            }
+            if (hasLaser && rightShot) {
+                drawRightLaser();
+                shootRightLaser();
+            }
+
+            // Keep ball in boundaries of screen
+            if (yBall + yMove < 0) { // Top of screen
+                yMove = -yMove;
+            }
+            else if (yBall + yMove > canvas.height - (paddleHeight + ballRadius * 2) + 5) { // Ball height of top of paddle
+                if (xBall > paddleX && xBall < paddleX + paddleWidth) { // Ball within paddle x bounds
+                    yMove = -yMove;
+                    if (xMove > 0) {
+                        xMove += .5;
+                    } else {
+                        xMove -= .5;
+                    }
+                    if (yMove > 0) {
+                        yMove += .2;
+                    } else {
+                        yMove -= .2;
+                    }
+                    console.log(xMove);
+                    if (leftPressed == true && xMove > 0) {
+                        xMove = -xMove;
+                    }
+                    else if (rightPressed == true && xMove < 0) {
+                        xMove = -xMove;
+                    }
+                }
+                else if (xBall < paddleX || xBall > paddleX + paddleWidth) { // Ball outside of paddle x bounds, keeps moving until bottom of screen
+                    yMove = yMove; //change back
+                    if (yBall + yMove > canvas.height) {
+                        alert("Game Over");
+                        document.location.reload();
+                    }
+
+                }
+
+            }
+            if (xBall + xMove < 0 || xBall + xMove > canvas.width - ballRadius * 2) { // Left and right of screen
+                xMove = -xMove
+            }
+
+
+            // Move Paddle
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 8;
+            }
+            if (leftPressed && paddleX > 0) {
+                paddleX -= 8;
+            }
+            requestAnimationFrame(draw);
+
+        }
+
+        // Handling user input
+        function keyDownHandler(e) {
+            if (e.keyCode == 39) {
+                rightPressed = true;
+            }
+            else if (e.keyCode == 37) {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if (e.keyCode == 39) {
+                rightPressed = false;
+            }
+            else if (e.keyCode == 37) {
+                leftPressed = false;
+            }
+        }
+
+        function spaceDownHandler(e) {
+            if (e.keyCode == 32) {
+                gameStarted = true;
+            }
+            if (e.keyCode == 32 && laserCount > 0) {
+                leftLaserY = paddleY - laserHeight;
+                rightLaserY = paddleY - laserHeight;
+                laserLeft = paddleX + 4;
+                laserRight = paddleX + paddleWidth - 8;
+                rightShot = true;
+                leftShot = true;
+                laserCount--;
+                if (laserCount < 0) {
+                    hasLaser = false;
+                }
+            }
+        }
+
+        function brickCollision() {
+            for (i = 0; i < brickCols; i++) {
+                for (j = 0; j < brickRows; j++) {
+                    var brick = bricks[i][j];
+                    if (brick.broken == 0) {
+                        if (powershot) {
+                            if ((xBall + xMove + ballRadius) > brick.x && (xBall + xMove + ballRadius) < (brick.x + brickWidth) && (yBall + yMove + ballRadius) > brick.y && (yBall + yMove + ballRadius) < (brick.y + brickHeight)) {
+                                brick.broken = 1;
+                                score++;
+                                count++;
+                                if (count == 8) {
+                                    powershot = false;
+                                }
+                            }
+                        }
+                        else if ((xBall + xMove + ballRadius) > brick.x && (xBall + xMove + ballRadius) < (brick.x + brickWidth) && (yBall + yMove + ballRadius) > brick.y && (yBall + yMove + ballRadius) < (brick.y + brickHeight)) {
+                            if (brick.powerup == 1) {
+                                hasLaser = true;
+                                laserCount++;
+                            }
+                            if ((i == powerBrickCol &&
+                                j == powerBrickRow) || (i == powerBrickCol2 &&
+                                    j == powerBrickRow2)) {
+                                powershot = true;
+                                count = 0;
+                                yMove = -yMove;
+                            }
+
+                            if (xBall + ballRadius < brick.x || xBall + ballRadius > (brick.x + brickWidth)) {
+                                xMove = -xMove;
+                                ctx.drawImage(spark, xBall, yBall);
+                                score++;
+                                brick.broken = 1;
+                            }
+                            else if (yBall + ballRadius > brick.y || yBall + ballRadius < (brick.y + brickHeight)) {
+                                yMove = -yMove;
+                                ctx.drawImage(spark, xBall, yBall);
+                                score++;
+                                brick.broken = 1;
+                            }
+                            if ((i == metalBrickCol &&
+                                j == metalBrickRow) || (i == metalBrickCol2 &&
+                                    j == metalBrickRow2)) {
+                                if (powershot) {
+                                    brick.broken = 1;
+                                    powershot = false;
+                                } else {
+                                    brick.broken = 0;
+                                    yMove = yMove;
+                                }
+                            }
+                        }
+                        if (leftLaserY < brick.y && laserLeft > brick.x + 1 && laserLeft < brick.x + 2 + brickWidth) {
+                            if (brick.powerup == 1) {
+                                laserCount++;
+                            }
+                            if ((i == powerBrickCol &&
+                                j == powerBrickRow) || (i == powerBrickCol2 &&
+                                    j == powerBrickRow2)) {
+                                powershot = true;
+                                count = 0;
+                            }
+                            if ((i == metalBrickCol &&
+                                j == metalBrickRow) || (i == metalBrickCol2 &&
+                                    j == metalBrickRow2)) {
+                                brick.broken = 1;
+                            }
+                            drawExplosion(laserLeft - explosionWidth / 2 + 3, leftLaserY);
+                            leftShot = false;
+                            score++;
+                            brick.broken = 1;
+                        }
+                        if (rightLaserY < brick.y && laserRight > brick.x + 1 && laserRight < brick.x + 2 + brickWidth) {
+                            if (brick.powerup == 1) {
+                                laserCount++;
+                            }
+                            if ((i == powerBrickCol &&
+                                j == powerBrickRow) || (i == powerBrickCol2 &&
+                                    j == powerBrickRow2)) {
+                                powershot = true;
+                                count = 0;
+                            }
+                            if ((i == metalBrickCol &&
+                                j == metalBrickRow) || (i == metalBrickCol2 &&
+                                    j == metalBrickRow2)) {
+                                brick.broken = 1;
+                            }
+                            drawExplosion(laserRight - explosionWidth / 2 + 3, rightLaserY);
+                            rightShot = false;
+                            score++;
+                            brick.broken = 1;
+                        }
+                        if (score == brickRows * brickCols) {
+                            alert("Insert 50¢ to keep playing!");
+                            document.location.reload();
+                        }
+                    }
+                }
+            }
+        }
+        randomizeStart();
+        randomizePowerUps(0, brickCols);
+        preload();
+        draw();
+    </script>
+
+</body>
+
+</html>

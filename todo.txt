@@ -3,6 +3,7 @@ Add angles to hitting paddle
 
 Allow user to hold onto the ball and shoot it at the beginning
 
+<<<<<<< HEAD
 Add images in place of rectangle/circle for ball, paddle, and bricks
 
 Add powerups
@@ -10,3 +11,6 @@ Add powerups
 Add start menu/press space to start
 
 
+=======
+Add more jQurey stuffs
+>>>>>>> d6a8999da3d957521ab11f7b3b513641880e2406
